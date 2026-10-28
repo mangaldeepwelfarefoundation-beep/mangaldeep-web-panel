@@ -77,7 +77,7 @@ const getProgramName = (member, programList) => {
 
 const deleteMemberFiles = async (member) => {
   try {
-    const urls = [member.photoURL, member.guardianPhotoURL, member.documentFrontURL, member.documentBackURL, member.guardianDocumentURL].filter(u => u?.includes('firebasestorage'))
+    const urls = [member.photoURL, member.guardianPhotoURL, member.documentFrontURL, member.documentBackURL, member.guardianDocumentURL, member.guardianDocumentBackURL].filter(u => u?.includes('firebasestorage'))
     await Promise.allSettled(urls.map(u => deleteObject(ref(storage, u))))
   } catch (e) { console.error(e) }
 }

@@ -39,7 +39,8 @@ const DocumentSection = ({ member }) => {
     { key: 'back',     title: 'Aadhaar Back',   url: member?.documentBackURL,     icon: <IdcardOutlined />, color: '#fa8c16' },
     { key: 'photo',    title: 'Member Photo',   url: member?.photoURL,            icon: <UserOutlined />,   color: '#1890ff' },
     { key: 'guardian', title: 'Guardian Photo', url: member?.guardianPhotoURL,    icon: <SafetyCertificateOutlined />, color: '#52c41a' },
-    { key: 'guardDoc', title: 'Guardian Doc',   url: member?.guardianDocumentURL, icon: <FileTextOutlined />, color: '#722ed1' },
+    { key: 'guardDoc', title: 'Varisdar Doc (Front)', url: member?.guardianDocumentURL,     icon: <FileTextOutlined />, color: '#722ed1' },
+    { key: 'guardDocBack', title: 'Varisdar Doc (Back)', url: member?.guardianDocumentBackURL, icon: <FileTextOutlined />, color: '#9254de' },
   ].filter(d => d.url)
 
   const openSlider = (idx) => { setActiveIdx(idx); setSliderVisible(true) }
@@ -142,6 +143,9 @@ const DocumentSection = ({ member }) => {
                   <div className="font-semibold text-gray-700 mb-1">Guardian Details</div>
                   <div><span className="text-gray-500">Name: </span><span className="font-medium">{member?.guardian}</span></div>
                   <div><span className="text-gray-500">Relation: </span><Tag color="cyan" style={{fontSize:10}}>{member?.guardianRelation}</Tag></div>
+                  {member?.guardianAadhaarNo && (
+                    <div><span className="text-gray-500">Aadhaar: </span><span className="font-medium font-mono">{member.guardianAadhaarNo}</span></div>
+                  )}
                 </div>
               )}
             </Card>
@@ -386,6 +390,9 @@ const isSuperAdmin =  user?.role === 'superadmin';
                         </Descriptions.Item>
                         <Descriptions.Item label={<b>Relation</b>}>
                           <Tag color="cyan" style={{ fontSize: 13 }}>{selectedMember.guardianRelation}</Tag>
+                        </Descriptions.Item>
+                        <Descriptions.Item label={<b>Varisdar Aadhaar No</b>}>
+                          <span style={{ fontSize: 14 }} className="font-mono">{selectedMember.guardianAadhaarNo || '—'}</span>
                         </Descriptions.Item>
                       </Descriptions>
                     </Card>

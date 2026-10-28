@@ -69,6 +69,7 @@ const EditMember = ({ open, setOpen, programs, agents, currentUser, memberId, on
   const [memberDocFront, setMemberDocFront] = useState(null)
   const [memberDocBack,  setMemberDocBack]  = useState(null)
   const [guardianDoc,    setGuardianDoc]    = useState(null)
+  const [guardianDocBack, setGuardianDocBack] = useState(null)
 
   // Location dropdowns
   const [states,    setStates]    = useState([])
@@ -159,6 +160,7 @@ const EditMember = ({ open, setOpen, programs, agents, currentUser, memberId, on
         aadhaarNo:        data.aadhaarNo,
         guardian:         data.guardian,
         guardianRelation: data.guardianRelationId,
+        guardianAadhaarNo: data.guardianAadhaarNo || '',
         joinDate:         join,
         program:          data.programId || '',   // single field
         addedBy:          data.addedBy || 'admin',
@@ -296,13 +298,14 @@ const EditMember = ({ open, setOpen, programs, agents, currentUser, memberId, on
 
   // ── File upload helper ───────────────────────────────────────────────────────
   const uploadFiles = async (values) => {
-    const results = { photoURL: null, guardianPhotoURL: null, documentFrontURL: null, documentBackURL: null, guardianDocumentURL: null }
+    const results = { photoURL: null, guardianPhotoURL: null, documentFrontURL: null, documentBackURL: null, guardianDocumentURL: null, guardianDocumentBackURL: null }
     const tasks = []
     if (memberPhoto)    tasks.push(uploadFile(memberPhoto,    'members/photos',              `${values.name}_photo`).then(u => { results.photoURL            = u }))
     if (guardianPhoto)  tasks.push(uploadFile(guardianPhoto,  'members/guardian_photos',     `${values.guardian}_photo`).then(u => { results.guardianPhotoURL    = u }))
     if (memberDocFront) tasks.push(uploadFile(memberDocFront, 'members/documents',           `${values.name}_doc_front`).then(u => { results.documentFrontURL    = u }))
     if (memberDocBack)  tasks.push(uploadFile(memberDocBack,  'members/documents',           `${values.name}_doc_back`).then(u => { results.documentBackURL     = u }))
     if (guardianDoc)    tasks.push(uploadFile(guardianDoc,    'members/guardian_documents',  `${values.guardian}_doc`).then(u => { results.guardianDocumentURL  = u }))
+    if (guardianDocBack) tasks.push(uploadFile(guardianDocBack, 'members/guardian_documents', `${values.guardian}_doc_back`).then(u => { results.guardianDocumentBackURL = u }))
     await Promise.allSettled(tasks)
     return results
   }
@@ -419,6 +422,7 @@ const EditMember = ({ open, setOpen, programs, agents, currentUser, memberId, on
         guardian:           values.guardian,
         guardianRelation:   selectedRelationName,
         guardianRelationId: values.guardianRelation,
+        guardianAadhaarNo:  values.guardianAadhaarNo || '',
 
         // Agent
         addedBy: addedByRole,
@@ -477,6 +481,7 @@ const EditMember = ({ open, setOpen, programs, agents, currentUser, memberId, on
       if (fileUrls.documentFrontURL)   updateData.documentFrontURL    = fileUrls.documentFrontURL
       if (fileUrls.documentBackURL)    updateData.documentBackURL     = fileUrls.documentBackURL
       if (fileUrls.guardianDocumentURL) updateData.guardianDocumentURL = fileUrls.guardianDocumentURL
+      if (fileUrls.guardianDocumentBackURL) updateData.guardianDocumentBackURL = fileUrls.guardianDocumentBackURL
 
       // Password
       if (values.password?.trim()) updateData.password = values.password
@@ -567,7 +572,7 @@ const EditMember = ({ open, setOpen, programs, agents, currentUser, memberId, on
     setSelectedProgram('')
     setProgramDetail(null)
     setMemberPhoto(null); setGuardianPhoto(null)
-    setMemberDocFront(null); setMemberDocBack(null); setGuardianDoc(null)
+    setMemberDocFront(null); setMemberDocBack(null); setGuardianDoc(null); setGuardianDocBack(null)
     setCities([]); setDistricts([])
     setDobDate(null); setAge(null); setJoinDate(dayjs())
     setJoinFeesDone(false); setPaymentMode('cash')
@@ -644,9 +649,11 @@ const EditMember = ({ open, setOpen, programs, agents, currentUser, memberId, on
               memberDocFront={memberDocFront} setMemberDocFront={setMemberDocFront}
               memberDocBack={memberDocBack}   setMemberDocBack={setMemberDocBack}
               guardianDoc={guardianDoc}       setGuardianDoc={setGuardianDoc}
+              guardianDocBack={guardianDocBack} setGuardianDocBack={setGuardianDocBack}
               existingMemberDocFront={memberData?.documentFrontURL}
               existingMemberDocBack={memberData?.documentBackURL}
               existingGuardianDoc={memberData?.guardianDocumentURL}
+              existingGuardianDocBack={memberData?.guardianDocumentBackURL}
               isEditMode={true}
             />
 

@@ -482,7 +482,8 @@ const MemberDetailDrawer = ({ member: memberProp, visible, onClose, programList,
     { type: 'Nominee / Varisdar Photo', url: member?.guardianPhotoURL,    icon: <SafetyOutlined />,  color: '#52c41a', required: true  },
     { type: 'Member Document (Front)', url: member?.documentFrontURL,    icon: <IdcardOutlined />,  color: '#faad14', required: true  },
     { type: 'Member Document (Back)',  url: member?.documentBackURL,     icon: <IdcardOutlined />,  color: '#fadb14', required: false },
-    { type: 'Nominee / Varisdar Document', url: member?.guardianDocumentURL, icon: <ProfileOutlined />, color: '#722ed1', required: true  },
+    { type: 'Nominee / Varisdar Document (Front)', url: member?.guardianDocumentURL, icon: <ProfileOutlined />, color: '#722ed1', required: true  },
+    { type: 'Nominee / Varisdar Document (Back)',  url: member?.guardianDocumentBackURL, icon: <ProfileOutlined />, color: '#9254de', required: false },
   ]
 
   const getAgeGroupColor = (g) => ({ minor: '#ff7875', adult: '#1890ff', senior: '#722ed1' }[g?.toLowerCase()] || '#d9d9d9')
@@ -925,6 +926,7 @@ const MemberDetailDrawer = ({ member: memberProp, visible, onClose, programList,
                       <div className="text-xs text-gray-400 mb-0.5">Nominee / Varisdar</div>
                       <div className="font-bold text-lg">{member?.guardian || '—'}</div>
                       <div className="text-gray-600 text-sm">{member?.guardianRelation || '—'}</div>
+                      <div className="text-gray-600 text-sm mt-1">Aadhaar No.: <span className="font-medium">{member?.guardianAadhaarNo || '—'}</span></div>
                     </div>
                   </div>
                 </Card>

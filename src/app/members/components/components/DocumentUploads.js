@@ -11,9 +11,12 @@ const DocumentUploads = ({
   setMemberDocBack,
   guardianDoc,
   setGuardianDoc,
+  guardianDocBack,
+  setGuardianDocBack = () => {},
   existingMemberDocFront,
   existingMemberDocBack,
   existingGuardianDoc,
+  existingGuardianDocBack,
   isEditMode = false
 }) => {
   const [previewVisible, setPreviewVisible] = useState(false)
@@ -21,6 +24,7 @@ const DocumentUploads = ({
   const [memberFrontFileList, setMemberFrontFileList] = useState([])
   const [memberBackFileList, setMemberBackFileList] = useState([])
   const [guardianFileList, setGuardianFileList] = useState([])
+  const [guardianBackFileList, setGuardianBackFileList] = useState([])
 
   // Initialize file lists from existing documents.
   //
@@ -69,6 +73,20 @@ const DocumentUploads = ({
       }])
     }
   }, [existingGuardianDoc, guardianDoc])
+
+  React.useEffect(() => {
+    const url = (typeof guardianDocBack === 'string' && guardianDocBack) || existingGuardianDocBack
+    if (url && !(guardianDocBack instanceof File)) {
+      setGuardianBackFileList([{
+        uid: '-4',
+        name: url.includes('.pdf') ? 'guardian_document_back.pdf' : 'guardian_document_back.jpg',
+        status: 'done',
+        url,
+        preview: url,
+        isImage: !url.includes('.pdf')
+      }])
+    }
+  }, [existingGuardianDocBack, guardianDocBack])
 
   // Check if file is an image
   const isImageFile = (file) => {
@@ -168,6 +186,32 @@ const DocumentUploads = ({
     }
   }
 
+  // Handle document upload for guardian (back side)
+  const handleGuardianBackChange = ({ fileList }) => {
+    const updatedList = fileList.map((file) => {
+      if (file.originFileObj && !file.url && !file.preview) {
+        if (isImageFile(file.originFileObj)) {
+          file.preview = URL.createObjectURL(file.originFileObj)
+        }
+        file.isImage = isImageFile(file.originFileObj)
+      }
+      return file
+    })
+
+    setGuardianBackFileList(updatedList)
+
+    if (updatedList.length > 0) {
+      const file = updatedList[0]
+      if (file.originFileObj) {
+        setGuardianDocBack(file.originFileObj)
+      } else if (file.url && !file.originFileObj) {
+        setGuardianDocBack(file.url)
+      }
+    } else {
+      setGuardianDocBack(null)
+    }
+  }
+
   // Handle preview
   const handlePreview = async (file) => {
     if (file.url) {
@@ -192,6 +236,10 @@ const DocumentUploads = ({
       setGuardianFileList([])
       setGuardianDoc(null)
       message.success('Nominee / Varisdar document removed!')
+    } else if (type === 'guardianBack') {
+      setGuardianBackFileList([])
+      setGuardianDocBack(null)
+      message.success('Nominee / Varisdar back document removed!')
     }
   }
 
@@ -286,7 +334,7 @@ const DocumentUploads = ({
       <Card title="Document Uploads" size="small" className="mb-4">
         <Row gutter={[24, 24]}>
           {/* Member Document Front */}
-          <Col xs={24} md={8}>
+          <Col xs={24} md={12} lg={6}>
             <Form.Item 
               label="Member Document (Front)" 
               required={!isEditMode}
@@ -305,7 +353,7 @@ const DocumentUploads = ({
           </Col>
 
           {/* Member Document Back */}
-          <Col xs={24} md={8}>
+          <Col xs={24} md={12} lg={6}>
             <Form.Item 
               label="Member Document (Back)"
               extra="Upload image or PDF (Max: 5MB)"
@@ -322,9 +370,9 @@ const DocumentUploads = ({
           </Col>
 
           {/* Nominee / Varisdar Document */}
-          <Col xs={24} md={8}>
+          <Col xs={24} md={12} lg={6}>
             <Form.Item
-              label="Nominee / Varisdar Document"
+              label="Nominee / Varisdar Document (Front)"
               extra="Upload image or PDF (Max: 5MB)"
             >
               <div className="space-y-3">
@@ -332,7 +380,24 @@ const DocumentUploads = ({
                   fileList={guardianFileList}
                   onChange={handleGuardianChange}
                   onPreview={handlePreview}
-                  type="Nominee / Varisdar Document"
+                  type="Nominee / Varisdar Document Front"
+                />
+              </div>
+            </Form.Item>
+          </Col>
+
+          {/* Nominee / Varisdar Document Back */}
+          <Col xs={24} md={12} lg={6}>
+            <Form.Item
+              label="Nominee / Varisdar Document (Back)"
+              extra="Upload image or PDF (Max: 5MB)"
+            >
+              <div className="space-y-3">
+                <UploadWithCropIfImage
+                  fileList={guardianBackFileList}
+                  onChange={handleGuardianBackChange}
+                  onPreview={handlePreview}
+                  type="Nominee / Varisdar Document Back"
                 />
               </div>
             </Form.Item>

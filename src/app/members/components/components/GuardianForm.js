@@ -74,6 +74,16 @@ const GuardianForm = ({ relations, onRelationAdded }) => {
               />
             </Form.Item>
           </Col>
+          <Col span={8}>
+            <Form.Item
+              label="Nominee / Varisdar Aadhaar No."
+              name="guardianAadhaarNo"
+              rules={[{ pattern: /^[0-9]{12}$/, message: 'Please enter valid 12-digit Aadhaar' }]}
+              normalize={v => (v || '').replace(/[^0-9]/g, '')}
+            >
+              <Input placeholder="Enter 12-digit Aadhaar (optional)" maxLength={12} inputMode="numeric" />
+            </Form.Item>
+          </Col>
         </Row>
       </Card>
 

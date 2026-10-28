@@ -93,12 +93,14 @@ export const uploadAllFiles = async (files) => {
   add('documentFrontURL',    files.memberDocFront,'members/documents',           `${memberName}_doc_front`)
   add('documentBackURL',     files.memberDocBack, 'members/documents',           `${memberName}_doc_back`)
   add('guardianDocumentURL', files.guardianDoc,   'members/guardian_documents',  `${guardianName}_doc`)
+  add('guardianDocumentBackURL', files.guardianDocBack, 'members/guardian_documents', `${guardianName}_doc_back`)
 
   const settled = await Promise.all(jobs)
 
   const out = {
     photoURL: '', guardianPhotoURL: '',
     documentFrontURL: '', documentBackURL: '', guardianDocumentURL: '',
+    guardianDocumentBackURL: '',
   }
   settled.forEach(({ key, url }) => { out[key] = url })
   return out
@@ -518,6 +520,7 @@ export const handleSubmit = async (values, context, message) => {
     memberDocFront,
     memberDocBack,
     guardianDoc,
+    guardianDocBack,
     currentUser,
     form,
     setOpen,
@@ -615,6 +618,7 @@ export const handleSubmit = async (values, context, message) => {
         memberDocFront,
         memberDocBack,
         guardianDoc,
+        guardianDocBack,
         memberName: values.name,
         guardianName: values.guardian
       }),
@@ -695,6 +699,7 @@ export const handleSubmit = async (values, context, message) => {
       guardian: values.guardian,
       guardianRelation: selectedRelationName,
       guardianRelationId: values.guardianRelation,
+      guardianAadhaarNo: values.guardianAadhaarNo || '',
       
       addedBy: addedByRole,
       agentId: addedByRole === 'agent' ? selectedAgent : null,
@@ -705,6 +710,7 @@ export const handleSubmit = async (values, context, message) => {
       documentFrontURL: fileUrls.documentFrontURL,
       documentBackURL: fileUrls.documentBackURL,
       guardianDocumentURL: fileUrls.guardianDocumentURL,
+      guardianDocumentBackURL: fileUrls.guardianDocumentBackURL,
       
       delete_flag: false,
       active_flag: true,

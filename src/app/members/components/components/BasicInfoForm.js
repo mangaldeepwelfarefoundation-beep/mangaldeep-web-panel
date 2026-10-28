@@ -87,7 +87,7 @@ const BasicInfoForm = ({
               <p><strong>Existing Member Details:</strong></p>
               <ul style={{ marginBottom: 0 }}>
                 <li><strong>Name:</strong> {existingMember.displayName}</li>
-                <li><strong>Father's Name:</strong> {existingMember.fatherName || 'Not available'}</li>
+                <li><strong>पिता / पति का नाम:</strong> {existingMember.fatherName || 'Not available'}</li>
                 <li><strong>Registration Number:</strong> {existingMember.registrationNumber}</li>
                 <li><strong>Phone:</strong> {existingMember.phone}</li>
                 <li><strong>Join Date:</strong> {existingMember.dateJoin || 'Not joined yet'}</li>
@@ -119,11 +119,11 @@ const BasicInfoForm = ({
       <Row gutter={16}>
         <Col span={8}>
           <Form.Item
-            label="Father's Name"
+            label="पिता / पति का नाम (Father / Husband Name)"
             name="fatherName"
-            rules={[{ required: true, message: "Please enter father's name" }]}
+            rules={[{ required: true, message: 'कृपया पिता या पति का नाम दर्ज करें' }]}
           >
-            <Input placeholder="Enter father's name" />
+            <Input placeholder="पिता या पति का नाम दर्ज करें" />
           </Form.Item>
         </Col>
         <Col span={8}>

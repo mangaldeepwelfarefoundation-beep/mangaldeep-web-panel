@@ -62,6 +62,7 @@ const AddMember = ({ open, setOpen, programs, agents, currentUser, onSuccess }) 
   const [memberDocFront, setMemberDocFront] = useState(null)
   const [memberDocBack,  setMemberDocBack]  = useState(null)
   const [guardianDoc,    setGuardianDoc]    = useState(null)
+  const [guardianDocBack, setGuardianDocBack] = useState(null)
 
   // ── Aadhaar duplicate check ────────────────────────────────────────────────
   const [existingMember, setExistingMember] = useState(null)
@@ -138,6 +139,7 @@ const AddMember = ({ open, setOpen, programs, agents, currentUser, onSuccess }) 
       city:              m.cityId || undefined,
       guardian:          m.guardian || '',
       guardianRelation:  m.guardianRelationId || undefined,
+      guardianAadhaarNo: m.guardianAadhaarNo || '',
       // The form field is spelled `bobDate` (typo in BasicInfoForm) while the
       // member doc stores `dobDate` — setting the wrong key left the date, and
       // the age derived from it, blank.
@@ -156,6 +158,7 @@ const AddMember = ({ open, setOpen, programs, agents, currentUser, onSuccess }) 
     if (m.documentFrontURL)    setMemberDocFront(m.documentFrontURL)
     if (m.documentBackURL)     setMemberDocBack(m.documentBackURL)
     if (m.guardianDocumentURL) setGuardianDoc(m.guardianDocumentURL)
+    if (m.guardianDocumentBackURL) setGuardianDocBack(m.guardianDocumentBackURL)
 
     setCopiedFrom({
       id: m.id,
@@ -170,6 +173,7 @@ const AddMember = ({ open, setOpen, programs, agents, currentUser, onSuccess }) 
         documentFrontURL:    m.documentFrontURL || '',
         documentBackURL:     m.documentBackURL || '',
         guardianDocumentURL: m.guardianDocumentURL || '',
+        guardianDocumentBackURL: m.guardianDocumentBackURL || '',
       },
     })
     setCopyOpen(false)
@@ -455,7 +459,7 @@ const AddMember = ({ open, setOpen, programs, agents, currentUser, onSuccess }) 
         addedByRole, selectedAgent, addedByName,
         joinDate, dobDate, age,
         joinFeesDone, paymentMode, paidAmount,
-        memberPhoto, guardianPhoto, memberDocFront, memberDocBack, guardianDoc,
+        memberPhoto, guardianPhoto, memberDocFront, memberDocBack, guardianDoc, guardianDocBack,
         currentUser, form, setOpen, setLoading,
         // Already reserved by generateRegistrationNumber — must not be
         // re-validated against the reservation it created itself
@@ -477,7 +481,7 @@ const AddMember = ({ open, setOpen, programs, agents, currentUser, onSuccess }) 
   const resetLocalState = () => {
     setSelectedProgram(''); setProgramDetail(null)
     setMemberPhoto(null); setGuardianPhoto(null)
-    setMemberDocFront(null); setMemberDocBack(null); setGuardianDoc(null)
+    setMemberDocFront(null); setMemberDocBack(null); setGuardianDoc(null); setGuardianDocBack(null)
     setCities([]); setDistricts([])
     setSelectedState(null); setSelectedDistrict(null)
     setDobDate(null); setAge(null); setJoinDate(dayjs())
@@ -698,9 +702,11 @@ const AddMember = ({ open, setOpen, programs, agents, currentUser, onSuccess }) 
               memberDocFront={memberDocFront} setMemberDocFront={setMemberDocFront}
               memberDocBack={memberDocBack}   setMemberDocBack={setMemberDocBack}
               guardianDoc={guardianDoc}       setGuardianDoc={setGuardianDoc}
+              guardianDocBack={guardianDocBack} setGuardianDocBack={setGuardianDocBack}
               existingMemberDocFront={copiedFrom?.docs?.documentFrontURL || ''}
               existingMemberDocBack={copiedFrom?.docs?.documentBackURL || ''}
               existingGuardianDoc={copiedFrom?.docs?.guardianDocumentURL || ''}
+              existingGuardianDocBack={copiedFrom?.docs?.guardianDocumentBackURL || ''}
             />
 
             {/* Notification Options Section */}

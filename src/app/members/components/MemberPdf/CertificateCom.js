@@ -767,7 +767,7 @@ const buildBannerStyles = (c) => {
     },
 
     // Badges row
-    badgeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+    badgeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, flexShrink: 0 },
     badgeSlot: { width: '42%', alignItems: 'center' },
     badgeOuter: {
       backgroundColor: ORANGE, borderRadius: 6, paddingHorizontal: 4, paddingVertical: 1.5,
@@ -780,23 +780,23 @@ const buildBannerStyles = (c) => {
     badgeText: { color: '#fff', fontSize: 11.5, fontWeight: 'bold', textAlign: 'center' },
 
     // Details + photo
-    main: { flexDirection: 'row' },
+    main: { flexDirection: 'row', flexShrink: 0 },
     details: { flex: 1, flexDirection: 'row', paddingRight: 14 },
     col: { flex: 1 },
     colGap: { width: 16 },
-    row: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: fs * 0.75 },
-    label: { fontSize: fs, fontWeight: 'bold', color: c.labelColor === 'black' ? INK : pick(c.labelColor, c), marginRight: 4 },
-    line: { flex: 1, borderBottomWidth: 0.9, borderBottomColor: INK, paddingLeft: 3, paddingBottom: 0.5 },
+    row: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: fs * 0.55, flexShrink: 0 },
+    label: { fontSize: fs, fontWeight: 'bold', flexShrink: 0, color: c.labelColor === 'black' ? INK : pick(c.labelColor, c), marginRight: 4 },
+    line: { flexGrow: 1, flexShrink: 1, flexBasis: 0, borderBottomWidth: 0.9, borderBottomColor: INK, paddingLeft: 3, paddingBottom: 0.5 },
     value: {
       fontSize: fs, fontWeight: 'bold', color: c.valueColor === 'black' ? INK : pick(c.valueColor, c),
       textTransform: c.valuesUppercase ? 'uppercase' : 'none',
     },
 
-    side: { width: 96, alignItems: 'center' },
-    dateRow: { flexDirection: 'row', alignItems: 'flex-end', alignSelf: 'stretch', marginBottom: 8 },
+    side: { width: 96, alignItems: 'center', flexShrink: 0 },
+    dateRow: { flexDirection: 'row', alignItems: 'flex-end', alignSelf: 'stretch', marginBottom: 6 },
     dateLabel: { fontSize: fs, fontWeight: 'bold', color: INK, marginRight: 2 },
     photoBox: {
-      width: 86, height: 100, borderWidth: 2, borderColor: PINK, backgroundColor: '#fff',
+      flexShrink: 0, width: 76, height: 86, borderWidth: 2, borderColor: PINK, backgroundColor: '#fff',
       alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
     },
     photo: { width: '100%', height: '100%', objectFit: 'cover' },
@@ -805,23 +805,23 @@ const buildBannerStyles = (c) => {
     memberNoValue: { color: PINK },
 
     // Lines under the details
-    amountRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginTop: 1 },
+    amountRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginTop: 0, flexShrink: 0 },
     amount: { fontSize: fs, fontWeight: 'bold', color: INK, marginRight: 12 },
     joinFee: { fontSize: fs - 1, fontWeight: 'bold', color: PINK },
-    rules: { fontSize: 7.5, color: INK, marginTop: 2, lineHeight: 1.25 },
+    rules: { fontSize: 7, color: INK, marginTop: 1, lineHeight: 1.2, flexShrink: 0 },
     rulesLabel: { fontWeight: 'bold', color: PINK },
-    note: { fontSize: 7.5, color: INK, marginTop: 1, lineHeight: 1.25 },
+    note: { fontSize: 7, color: INK, marginTop: 1, lineHeight: 1.2, flexShrink: 0 },
 
     // Footer
-    footer: { marginTop: 'auto', flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+    footer: { marginTop: 'auto', paddingTop: 3, flexShrink: 0, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
     footSide: { width: 130, alignItems: 'center' },
-    footHead: { fontSize: 12.5, fontWeight: 'bold', color: PINK, textAlign: 'center' },
+    footHead: { fontSize: 11.5, fontWeight: 'bold', color: PINK, textAlign: 'center' },
     footName: { fontSize: 8.5, fontWeight: 'bold', color: INK, textAlign: 'center' },
     sign: { height: 22, width: 90, objectFit: 'contain', marginBottom: 1 },
     footCenter: { flex: 1, alignItems: 'center', paddingHorizontal: 6 },
-    thanksBox: { borderTopWidth: 0.9, borderBottomWidth: 0.9, borderColor: PINK, paddingVertical: 1.5, paddingHorizontal: 26, marginBottom: 3 },
-    thanks: { fontSize: 9.5, color: PINK, textAlign: 'center' },
-    footNote: { fontSize: 8, fontWeight: 'bold', color: INK, textAlign: 'center' },
+    thanksBox: { flexShrink: 0, alignSelf: 'stretch', marginHorizontal: 40, borderTopWidth: 0.9, borderBottomWidth: 0.9, borderColor: PINK, paddingVertical: 2, marginBottom: 2 },
+    thanks: { fontSize: 9, color: PINK, textAlign: 'center' },
+    footNote: { fontSize: 7.5, fontWeight: 'bold', color: INK, textAlign: 'center' },
   });
 };
 
@@ -863,14 +863,26 @@ const BannerPage = ({ data, memberProgram, trust, c }) => {
   const center2 = c.showCenter ? fill(c.centerLine2) : '';
   const memberNo = [data?.registrationNumber, data?.legacyApplicationNo && `(${data.legacyApplicationNo})`].filter(Boolean).join(' ');
 
-  const detailRow = (f) => (
-    <View key={f.id} style={st.row} wrap={false}>
-      <Text style={st.label}>{f.label}</Text>
-      <View style={st.line}>
-        <Text hyphenationCallback={wholeWords} style={st.value}>{certificateFieldValue(f, values)}</Text>
+  // Width of one detail column (points), so a long value (address…) shrinks to
+  // stay on its own line instead of pushing the rows below it down.
+  const fs = c.detailFontSize;
+  const hasSide = c.showPhoto || c.showDate || c.showMemberNo;
+  const colWidth = (595.28 - 38 - 34 - (hasSide ? 96 : 0) - 14 - (rightRows.length ? 16 : 0)) / (rightRows.length ? 2 : 1);
+  const fitValue = (label, value) => {
+    const room = colWidth - String(label).length * fs * 0.48 - 10;
+    return fitFontSize(value, fs, Math.max(6, Math.floor(room / (fs * 0.62))), 0.75);
+  };
+  const detailRow = (f) => {
+    const value = certificateFieldValue(f, values);
+    return (
+      <View key={f.id} style={st.row} wrap={false}>
+        <Text style={st.label}>{f.label}</Text>
+        <View style={st.line}>
+          <Text hyphenationCallback={wholeWords} style={[st.value, { fontSize: fitValue(f.label, value) }]}>{value}</Text>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   const badge = (text) => (
     <View style={st.badgeSlot}>
@@ -932,9 +944,11 @@ const BannerPage = ({ data, memberProgram, trust, c }) => {
           </View>
         ) : null}
         {rule ? (
-          <Text style={st.rules}><Text style={st.rulesLabel}>{c.rulesLabel} </Text>{rule}</Text>
+          <Text style={[st.rules, { fontSize: fitFontSize(rule, 7, 150, 0.85) }]} maxLines={2}>
+            <Text style={st.rulesLabel}>{c.rulesLabel} </Text>{rule}
+          </Text>
         ) : null}
-        {note ? <Text style={st.note}>{note}</Text> : null}
+        {note ? <Text style={st.note} maxLines={2}>{note}</Text> : null}
 
         <View style={st.footer}>
           <View style={st.footSide}>

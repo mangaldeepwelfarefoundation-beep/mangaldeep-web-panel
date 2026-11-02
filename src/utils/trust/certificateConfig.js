@@ -148,7 +148,7 @@ export const DEFAULT_CERTIFICATE = {
   showMemberNo: true,
   memberNoLabel: 'सदस्य क्रमांक :',
   showScheme: true,
-  schemeText: '{programName} - {groupName}',
+  schemeText: '{programName}',     // badge shows only the yojna name
   showDate: true,
   dateLabel: 'दिनांक :',
 
@@ -262,6 +262,10 @@ export const normalizeCertificate = (raw) => {
       ids.add(id);
       return { ...f, id };
     });
+  // The earlier default printed the age group after the yojna name — now only the name
+  if (out.design === 'banner' && out.schemeText.replace(/\s+/g, '') === '{programName}-{groupName}') {
+    out.schemeText = DEFAULT_CERTIFICATE.schemeText;
+  }
   out.v = CERT_CONFIG_VERSION;
   return out;
 };

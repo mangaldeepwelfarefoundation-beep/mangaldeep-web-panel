@@ -710,7 +710,7 @@ export default function CertificateBuilderPage() {
             maxLength={60} disabled={disabled} hint="Leave empty to print no badge." />
           <LineWithText label="Right badge" on={cfg.showScheme} onToggle={set('showScheme')}
             text={cfg.schemeText} onText={set('schemeText')} maxLength={120} disabled={disabled}
-            hint="{programName} = yojna name, {groupName} = age group." />
+            hint="{programName} = yojna name. Add {groupName} only if you also want the age group." />
           <OnOff label="Faded logo behind the details" checked={cfg.showWatermark} onChange={set('showWatermark')} disabled={disabled} />
         </>
       ) : (

@@ -36,11 +36,13 @@ import {
   TRUST_DOC_PATH, TRUST_STORAGE_FOLDER, setTrust, getTrustRaw, isTrustStoragePath,
 } from '@/utils/trust/trustStore';
 import {
-  DEFAULT_CERT_FIELDS, CERT_FIELD_SOURCES, CERT_PLACEHOLDERS, CERT_MAX_FIELDS,
+  CERT_FIELD_SOURCES, CERT_PLACEHOLDERS, CERT_MAX_FIELDS, CERT_DESIGNS,
+  BANNER_CERT_FIELDS, CLASSIC_CERT_FIELDS,
   CERT_SAMPLE_MEMBER, CERT_SAMPLE_PROGRAM, normalizeCertificate, serializeCertificate,
 } from '@/utils/trust/certificateConfig';
 import CertificateCom from '@/app/members/components/MemberPdf/CertificateCom';
 import BuiltInFrame from '@/app/api/helper/Images/FraameImg';
+import BuiltInBanner from '@/app/api/helper/Images/BannerImg';
 
 const { Title, Text } = Typography;
 
@@ -49,7 +51,13 @@ const COLOR_OPTIONS = [
   { value: 'primary', label: 'Main colour' },
   { value: 'accent', label: 'Second colour' },
   { value: 'black', label: 'Black' },
+  { value: 'design', label: 'Design colour (pink)' },
 ];
+
+// Rows of each design, and whether a row list is still exactly one of them
+const DESIGN_ROWS = { banner: BANNER_CERT_FIELDS, classic: CLASSIC_CERT_FIELDS };
+const sameRows = (a, b) => JSON.stringify(a.map(({ label, source, col, show }) => [label, source, col, show]))
+  === JSON.stringify(b.map(({ label, source, col, show }) => [label, source, col, show]));
 const imageAddress = (path) =>
   (path && typeof window !== 'undefined' ? `${window.location.origin}/api/trust-image?p=${encodeURIComponent(path)}` : '');
 
@@ -298,6 +306,15 @@ export default function CertificateBuilderPage() {
     message.info('Back to the original certificate — press Save to keep it');
   };
 
+  // ── Design ──────────────────────────────────────────────────────────────
+  const switchDesign = (design) => setCfg((prev) => {
+    const other = DESIGN_ROWS[prev.design];
+    const fields = other && sameRows(prev.fields, other)
+      ? DESIGN_ROWS[design].map((f) => ({ ...f }))
+      : prev.fields;
+    return { ...prev, design, fields };
+  });
+
   // ── Detail rows ─────────────────────────────────────────────────────────
   const patchField = (id, patch) => setCfg((prev) => ({
     ...prev, fields: prev.fields.map((f) => (f.id === id ? { ...f, ...patch } : f)),
@@ -367,11 +384,21 @@ export default function CertificateBuilderPage() {
     if (!file.type?.startsWith('image/')) { message.error('Please choose an image file'); return Upload.LIST_IGNORE; }
     setUploadingKey(side);
     try {
-      const { blob, ext, type } = await prepareImage(file, 700);
-      const path = `${TRUST_STORAGE_FOLDER}/certsign_${side}_${Date.now()}.${ext}`;
+      const isBanner = side === 'banner';
+      const { blob, ext, type, width, height } = await prepareImage(file, isBanner ? 2480 : 700);
+      const path = `${TRUST_STORAGE_FOLDER}/${isBanner ? 'certbanner' : `certsign_${side}`}_${Date.now()}.${ext}`;
       await uploadBytes(ref(storage, path), blob, { contentType: type, cacheControl: 'public, max-age=31536000' });
-      set(`${side}SignPath`)(path);
-      message.success('Signature added — press Save to keep it');
+      if (isBanner) {
+        set('bannerPath')(path);
+        const ratio = width / height;
+        setFrameNote(Math.abs(ratio - PAGE_RATIO) / PAGE_RATIO > 0.06
+          ? 'This picture is not the same shape as the page (210 × 148 mm), so it is stretched a little. Best size: 2480 × 1748 pixels.'
+          : '');
+        message.success('Header picture added — check the preview, then press Save');
+      } else {
+        set(`${side}SignPath`)(path);
+        message.success('Signature added — press Save to keep it');
+      }
     } catch (e) {
       console.error(e);
       message.error('Upload failed: ' + e.message);
@@ -425,6 +452,7 @@ export default function CertificateBuilderPage() {
     const certificate = normalizeCertificate(cfg);
     certificate.leftSignSrc = imageAddress(certificate.leftSignPath);
     certificate.rightSignSrc = imageAddress(certificate.rightSignPath);
+    certificate.bannerSrc = imageAddress(certificate.bannerPath);
     return {
       ...trust,
       certificate,
@@ -477,7 +505,10 @@ export default function CertificateBuilderPage() {
   const leftRows = cfg.fields.filter((f) => f.col !== 'right');
   const rightRows = cfg.fields.filter((f) => f.col === 'right');
   const shownRows = Math.max(leftRows.filter((f) => f.show).length, rightRows.filter((f) => f.show).length);
-  const tightFit = shownRows * (cfg.detailFontSize * 1.45 + 4) > 118;
+  const isBanner = cfg.design === 'banner';
+  const tightFit = isBanner
+    ? shownRows * (cfg.detailFontSize * 1.85 + 3) > 135 + (45 - cfg.bodyTop) * 4.2
+    : shownRows * (cfg.detailFontSize * 1.45 + 4) > 118;
   const canAdd = cfg.fields.length < CERT_MAX_FIELDS;
 
   const rowList = (title, rows, col) => (
@@ -526,10 +557,82 @@ export default function CertificateBuilderPage() {
     );
   };
 
+  const designSection = {
+    key: 'design',
+    label: '1. Design',
+    children: (
+      <>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '4px 0 8px' }}>
+          <div style={{ fontSize: 13, fontWeight: 500 }}>Certificate design</div>
+          <Segmented value={cfg.design} onChange={switchDesign} disabled={disabled} options={CERT_DESIGNS} />
+        </div>
+        {isBanner && (
+          <>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{
+                width: 170, aspectRatio: '210 / 148', flexShrink: 0, borderRadius: 8, border: '1px solid #e5e7eb',
+                background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+              }}>
+                {uploadingKey === 'banner' ? <Spin /> : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={cfg.bannerPath ? imageAddress(cfg.bannerPath) : BuiltInBanner} alt="Header picture"
+                    style={{ width: '100%', height: '100%', objectFit: 'fill', opacity: cfg.showFrame ? 1 : 0.35 }} />
+                )}
+              </div>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ fontWeight: 600, fontSize: 13 }}>
+                  Header picture{' '}
+                  {cfg.bannerPath ? <Tag color="green">Your picture</Tag> : <Tag>Built-in</Tag>}
+                </div>
+                <div style={{ fontSize: 11, color: '#6b7280', margin: '2px 0 8px' }}>
+                  The whole page: the pink header (logo, name, address, founders) on top and an empty
+                  body below it. Best: 2480 × 1748 pixels, JPG or PNG.
+                </div>
+                {canEdit && (
+                  <Space size={6} wrap>
+                    <Upload accept="image/*" showUploadList={false} beforeUpload={uploadSign('banner')} disabled={!!uploadingKey || saving}>
+                      <Button size="small" type="primary" ghost icon={<UploadOutlined />} loading={uploadingKey === 'banner'} disabled={!!uploadingKey || saving}>
+                        {cfg.bannerPath ? 'Change picture' : 'Upload picture'}
+                      </Button>
+                    </Upload>
+                    {cfg.bannerPath && (
+                      <Button size="small" icon={<UndoOutlined />} disabled={saving}
+                        onClick={() => { set('bannerPath')(''); setFrameNote(''); }}>Use built-in</Button>
+                    )}
+                  </Space>
+                )}
+              </div>
+            </div>
+            {frameNote && <Alert type="warning" showIcon style={{ marginTop: 10 }} title={frameNote} />}
+            <Divider />
+            <OnOff label="Print the header picture" hint="Off = plain page (for pre-printed paper)."
+              checked={cfg.showFrame} onChange={set('showFrame')} disabled={disabled} />
+            <div style={{ fontSize: 12, fontWeight: 500, color: '#374151', marginTop: 6 }}>Where the details start (below the header)</div>
+            <div style={{ padding: '0 22px' }}>
+              <Slider min={20} max={70} step={0.5} value={cfg.bodyTop} onChange={set('bodyTop')} disabled={disabled}
+                marks={{ 20: 'higher', 45: 'normal', 70: 'lower' }} />
+            </div>
+            <Row gutter={12} style={{ marginTop: 14 }}>
+              <Col xs={12}>
+                <div style={{ fontSize: 12, fontWeight: 500, color: '#374151', marginBottom: 3 }}>Design colour</div>
+                <Input type="color" value={cfg.designColor} onChange={(e) => set('designColor')(e.target.value)} disabled={disabled} style={{ width: 80, padding: 2 }} />
+              </Col>
+              <Col xs={12}>
+                <div style={{ fontSize: 12, fontWeight: 500, color: '#374151', marginBottom: 3 }}>Badge edge colour</div>
+                <Input type="color" value={cfg.designAccent} onChange={(e) => set('designAccent')(e.target.value)} disabled={disabled} style={{ width: 80, padding: 2 }} />
+              </Col>
+            </Row>
+          </>
+        )}
+      </>
+    ),
+  };
+
   const sections = [
-    {
+    designSection,
+    !isBanner && {
       key: 'frame',
-      label: '1. Frame picture and page space',
+      label: 'Frame picture and page space',
       children: (
         <>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -600,8 +703,17 @@ export default function CertificateBuilderPage() {
     },
     {
       key: 'top',
-      label: '2. Top part — heading, logos, title',
-      children: (
+      label: isBanner ? '2. Badges' : '2. Top part — heading, logos, title',
+      children: isBanner ? (
+        <>
+          <TextBox label="Left badge (certificate title)" value={cfg.title} onChange={set('title')}
+            maxLength={60} disabled={disabled} hint="Leave empty to print no badge." />
+          <LineWithText label="Right badge" on={cfg.showScheme} onToggle={set('showScheme')}
+            text={cfg.schemeText} onText={set('schemeText')} maxLength={120} disabled={disabled}
+            hint="{programName} = yojna name, {groupName} = age group." />
+          <OnOff label="Faded logo behind the details" checked={cfg.showWatermark} onChange={set('showWatermark')} disabled={disabled} />
+        </>
+      ) : (
         <>
           <TextBox label="Certificate title (the coloured badge)" value={cfg.title} onChange={set('title')}
             maxLength={60} disabled={disabled} hint="Leave empty to print no badge." />
@@ -639,14 +751,15 @@ export default function CertificateBuilderPage() {
     },
     {
       key: 'line',
-      label: '3. Member number, yojna and date line',
+      label: isBanner ? '3. Member number and date' : '3. Member number, yojna and date line',
       children: (
         <>
+          {isBanner && <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>The date prints above the photo, the member number under it.</div>}
           <LineWithText label="Member number" on={cfg.showMemberNo} onToggle={set('showMemberNo')}
             text={cfg.memberNoLabel} onText={set('memberNoLabel')} maxLength={40} disabled={disabled} />
-          <LineWithText label="Yojna (middle)" on={cfg.showScheme} onToggle={set('showScheme')}
+          {!isBanner && <LineWithText label="Yojna (middle)" on={cfg.showScheme} onToggle={set('showScheme')}
             text={cfg.schemeText} onText={set('schemeText')} maxLength={120} disabled={disabled}
-            hint="{programName} = yojna name, {groupName} = age group." />
+            hint="{programName} = yojna name, {groupName} = age group." />}
           <LineWithText label="Date" on={cfg.showDate} onToggle={set('showDate')}
             text={cfg.dateLabel} onText={set('dateLabel')} maxLength={40} disabled={disabled} />
         </>
@@ -668,8 +781,8 @@ export default function CertificateBuilderPage() {
           {rowList('Left column', leftRows, 'left')}
           {rowList('Right column', rightRows, 'right')}
           {!canAdd && <div style={{ fontSize: 11, color: '#b45309' }}>The certificate can hold at most {CERT_MAX_FIELDS} rows.</div>}
-          <Popconfirm title="Put the 12 original rows back?" okText="Yes" disabled={disabled}
-            onConfirm={() => set('fields')(DEFAULT_CERT_FIELDS.map((f) => ({ ...f })))}>
+          <Popconfirm title="Put this design's original rows back?" okText="Yes" disabled={disabled}
+            onConfirm={() => set('fields')(DESIGN_ROWS[cfg.design].map((f) => ({ ...f })))}>
             <Button size="small" icon={<UndoOutlined />} disabled={disabled}>Original rows</Button>
           </Popconfirm>
         </>
@@ -767,7 +880,7 @@ export default function CertificateBuilderPage() {
         </>
       ),
     },
-  ];
+  ].filter(Boolean);
 
   return (
     <div style={{ padding: 20, maxWidth: 1400, margin: '0 auto' }}>
@@ -816,7 +929,7 @@ export default function CertificateBuilderPage() {
                 <Link href="/settings/trust-details">Trust Details</Link>.
               </span>
             )} />
-          <Collapse items={sections} defaultActiveKey={['frame', 'top']} style={{ background: '#fff', borderRadius: 10 }} />
+          <Collapse items={sections} defaultActiveKey={['design', 'top']} style={{ background: '#fff', borderRadius: 10 }} />
         </Col>
 
         {/* ── Right: the real certificate ───────────────────────────────── */}

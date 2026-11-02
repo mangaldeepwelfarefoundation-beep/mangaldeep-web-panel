@@ -6,13 +6,19 @@
 // details everywhere they already go: the browser store, the public API, the
 // live Firestore listener and the server routes that render the certificate.
 //
-// DEFAULT_CERTIFICATE is exactly the certificate as it was before the builder
-// existed — an empty / missing config prints the same page as always.
+// Two designs:
+//   'banner'  — the Mangaldeep design: one picture with the pink header (logo,
+//               name, address, founders) on top and an empty cream body; the
+//               member details are printed on lines in that body. DEFAULT.
+//   'classic' — the older design: a frame picture, the header drawn from Trust
+//               Details, and the details in two columns.
+// A config saved before designs existed (no `design` key) gets the banner
+// defaults, so every certificate switches to the new design at once.
 //
 // No React and no Firebase imports here: the PDF document, the builder page and
 // the server all share this file.
 
-export const CERT_CONFIG_VERSION = 1;
+export const CERT_CONFIG_VERSION = 2;
 export const CERT_MAX_FIELDS = 20;
 
 // Uploaded signature images live beside the other trust images.
@@ -33,6 +39,7 @@ export const CERT_FIELD_SOURCES = [
   { key: 'age',                label: 'Age',                    sample: '52' },
   { key: 'guardian',           label: 'Nominee (वारिसदार)',      sample: 'चंपादेवी' },
   { key: 'guardianRelation',   label: 'Relation with nominee',  sample: 'पति-पत्नी' },
+  { key: 'guardianAadhaarNo',  label: 'Nominee Aadhaar number', sample: '5521-0987-3344' },
   { key: 'address',            label: 'Address',                sample: 'हेमावास' },
   { key: 'village',            label: 'Village',                sample: 'पाली' },
   { key: 'villageDistrict',    label: 'Village & district',     sample: 'पाली, Pali' },
@@ -64,7 +71,29 @@ export const CERT_PLACEHOLDERS = [
 
 const field = (id, label, source, col) => ({ id, label, source, col, show: true, text: '' });
 
-export const DEFAULT_CERT_FIELDS = [
+export const CERT_DESIGNS = [
+  { value: 'banner',  label: 'Mangaldeep (pink header)' },
+  { value: 'classic', label: 'Classic (frame)' },
+];
+
+// Rows of the Mangaldeep design — same order as the printed form
+export const BANNER_CERT_FIELDS = [
+  field('b1',  'नाम',                'displayName',       'left'),
+  field('b2',  'जन्म तिथि',           'dobDate',           'left'),
+  field('b3',  'मोबाइल न.',           'phone',             'left'),
+  field('b4',  'पता',                'address',           'left'),
+  field('b5',  'वारिसदार',            'guardian',          'left'),
+  field('b6',  'उम्र वर्ग',            'groupName',         'left'),
+  field('b7',  'पिता/पति का नाम',      'fatherName',        'right'),
+  field('b8',  'जाति',               'caste',             'right'),
+  field('b9',  'आधार संख्या',         'aadhaarNo',         'right'),
+  field('b10', 'जिला',               'district',          'right'),
+  field('b11', 'सम्बन्ध',             'guardianRelation',  'right'),
+  field('b12', 'वारिसदार आधार न.',     'guardianAadhaarNo', 'right'),
+];
+
+// Rows of the classic design
+export const CLASSIC_CERT_FIELDS = [
   field('f1',  'नाम',          'displayName',      'left'),
   field('f2',  'पिता का नाम',   'fatherName',       'left'),
   field('f3',  'फोन न.',       'phone',            'left'),
@@ -79,8 +108,18 @@ export const DEFAULT_CERT_FIELDS = [
   field('f12', 'आधार कार्ड',    'aadhaarNo',        'right'),
 ];
 
+// The rows a new certificate starts with
+export const DEFAULT_CERT_FIELDS = BANNER_CERT_FIELDS;
+
 export const DEFAULT_CERTIFICATE = {
   v: CERT_CONFIG_VERSION,
+
+  // ── Design ────────────────────────────────────────────────────────────────
+  design: 'banner',               // 'banner' | 'classic'
+  bannerPath: '',                 // uploaded header picture ('' = built-in)
+  bodyTop: 45,                    // banner: where the body starts (percent of page height)
+  designColor: '#FF0065',         // banner: badges, photo box, footer headings
+  designAccent: '#F7941D',        // banner: the edge of the badges
 
   // ── Page ──────────────────────────────────────────────────────────────────
   // The frame PICTURE itself is a trust image (settings/trustInfo.framePath);
@@ -91,7 +130,7 @@ export const DEFAULT_CERTIFICATE = {
   padY: 35,                       // space above & below the text (points)
 
   // ── Header ────────────────────────────────────────────────────────────────
-  showWatermark: true,
+  showWatermark: false,
   watermarkOpacity: 8,            // percent
   showBlessings: true,
   showLogo: true,
@@ -103,13 +142,13 @@ export const DEFAULT_CERTIFICATE = {
   showContact: true,
   contactLabel: 'संपर्क सूत्र :',
   showStates: true,
-  title: 'सदस्यता प्रमाण पत्र',
+  title: 'सदस्यता प्रमाण - पत्र',
 
   // ── Line under the header ─────────────────────────────────────────────────
   showMemberNo: true,
   memberNoLabel: 'सदस्य क्रमांक :',
   showScheme: true,
-  schemeText: '{programName} Group - {groupName}',
+  schemeText: '{programName} - {groupName}',
   showDate: true,
   dateLabel: 'दिनांक :',
 
@@ -119,12 +158,12 @@ export const DEFAULT_CERTIFICATE = {
   valuesUppercase: true,
   detailFontSize: 10,
   labelWidth: 30,                 // percent of a column
-  labelColor: 'primary',          // 'primary' | 'accent' | 'black'
-  valueColor: 'accent',
+  labelColor: 'black',            // 'primary' | 'accent' | 'black' | 'design'
+  valueColor: 'design',
 
   // ── Lines under the details ───────────────────────────────────────────────
   showContribution: true,
-  contributionText: 'सहयोग राशि : ₹ {payAmount} रूपये प्रत्येक कार्यक्रम पर लागु।',
+  contributionText: 'सहयोग राशि : ₹ {payAmount} /-   प्रत्येक कार्यक्रम पर लागु',
   showJoinFee: true,
   joinFeeText: 'जॉइन फीस : ₹ {joinFeePending} Pending',
   showRules: true,
@@ -133,16 +172,16 @@ export const DEFAULT_CERTIFICATE = {
 
   // ── Footer ────────────────────────────────────────────────────────────────
   showLeft: true,
-  leftLabel: 'कार्यकर्ता',
+  leftLabel: 'प्रतिनिधि / कार्यकर्ता',
   leftText: '{agentName}',
   leftSignPath: '',
   showCenter: true,
-  centerLine1: '{slogan}',
-  centerLine2: '{jurisdiction}',
+  centerLine1: 'संस्थान में योगदान के लिए धन्यवाद',
+  centerLine2: 'नोट - प्रमाण पत्र को संभाल रखे यह आपकी सदस्यता का आधिकारिक दस्तावेज है',
   showRight: true,
-  rightLabel: 'संस्थापक',
-  rightLine1: '{trustName}',
-  rightLine2: '{trustCity}',
+  rightLabel: 'अध्यक्ष',
+  rightLine1: '',
+  rightLine2: '',
   rightSignPath: '',
 };
 
@@ -154,11 +193,15 @@ const TEXT_LIMITS = {
 };
 const NUMBER_LIMITS = {
   watermarkOpacity: [0, 40], detailFontSize: [7, 13], labelWidth: [15, 55],
-  padX: [15, 60], padY: [15, 60],
+  padX: [15, 60], padY: [15, 60], bodyTop: [20, 70],
 };
-const COLOR_CHOICES = ['primary', 'accent', 'black'];
+const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+const COLOR_CHOICES = ['primary', 'accent', 'black', 'design'];
 // Settings that must be one of a fixed list
-const CHOICES = { labelColor: COLOR_CHOICES, valueColor: COLOR_CHOICES, frameFit: ['fill', 'contain'] };
+const CHOICES = {
+  labelColor: COLOR_CHOICES, valueColor: COLOR_CHOICES, frameFit: ['fill', 'contain'],
+  design: CERT_DESIGNS.map((d) => d.value),
+};
 
 const cleanText = (v, max) => String(v ?? '').replace(/[\u0000-\u001f]+/g, ' ').slice(0, max);
 
@@ -187,6 +230,12 @@ export const normalizeCertificate = (raw) => {
   }
   if (!input || typeof input !== 'object' || Array.isArray(input)) input = {};
 
+  // Saved before designs existed → start from the Mangaldeep design; only the
+  // uploaded signature pictures are carried over.
+  if (Object.keys(input).length && input.design === undefined) {
+    input = { leftSignPath: input.leftSignPath, rightSignPath: input.rightSignPath };
+  }
+
   const out = { ...DEFAULT_CERTIFICATE };
   for (const [key, def] of Object.entries(DEFAULT_CERTIFICATE)) {
     const v = input[key];
@@ -197,7 +246,8 @@ export const normalizeCertificate = (raw) => {
       const [min, max] = NUMBER_LIMITS[key] || [-Infinity, Infinity];
       if (Number.isFinite(n)) out[key] = Math.min(max, Math.max(min, n));
     } else if (CHOICES[key]) { if (CHOICES[key].includes(v)) out[key] = v; }
-    else if (key === 'leftSignPath' || key === 'rightSignPath') out[key] = isStoragePath(v) ? v : '';
+    else if (key === 'leftSignPath' || key === 'rightSignPath' || key === 'bannerPath') out[key] = isStoragePath(v) ? v : '';
+    else if (key === 'designColor' || key === 'designAccent') { if (HEX_RE.test(v)) out[key] = v.toUpperCase(); }
     else if (typeof v === 'string') out[key] = cleanText(v, TEXT_LIMITS[key] || 200);
   }
 
@@ -249,6 +299,7 @@ export const buildCertificateValues = (data, memberProgram, trust) => {
     age: show(d.age),
     guardian: show(d.guardian),
     guardianRelation: show(d.guardianRelation),
+    guardianAadhaarNo: show(d.guardianAadhaarNo),
     address: show(d.currentAddress || d.village),
     village,
     villageDistrict: district ? `${village}, ${district}` : village,

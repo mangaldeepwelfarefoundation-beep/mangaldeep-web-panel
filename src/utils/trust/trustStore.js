@@ -154,6 +154,8 @@ export const normalizeTrust = (raw, options = {}) => {
   t.certificate = normalizeCertificate(t.certificateConfig);
   t.certificate.leftSignSrc = imageSrc(t.certificate.leftSignPath, '', origin);
   t.certificate.rightSignSrc = imageSrc(t.certificate.rightSignPath, '', origin);
+  // '' → the "Mangaldeep" design uses its built-in header picture
+  t.certificate.bannerSrc = imageSrc(t.certificate.bannerPath, '', origin);
 
   return t;
 };

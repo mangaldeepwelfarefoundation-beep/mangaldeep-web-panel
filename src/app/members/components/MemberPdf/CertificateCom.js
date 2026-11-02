@@ -1,6 +1,7 @@
 import FrameImg from '@/app/api/helper/Images/FraameImg';
 import LogoImg from '@/app/api/helper/Images/LogoImg';
 import RigthImg from '@/app/api/helper/Images/rigthImg';
+import BannerImg from '@/app/api/helper/Images/BannerImg';
 import NotoSansDevanagari from '@/app/api/helper/static/font/NotoSansDevanagari';
 import NotoSansDevanagariBold from '@/app/api/helper/static/font/NotoSansDevanagariBold';
 import { Document, Font, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
@@ -33,7 +34,8 @@ const DEFAULT_LAYOUT = normalizeCertificate();
 const STATE_GAP = 26;   // space between the title badge and the state name on each side
 // Lines wrap only between words — never in the middle of a word or a number
 const wholeWords = (word) => [word];
-const pick = (choice) => (choice === 'primary' ? BLUE : choice === 'accent' ? RED : '#000');
+const pick = (choice, c) => (choice === 'primary' ? BLUE : choice === 'accent' ? RED
+  : choice === 'design' ? (c?.designColor || RED) : '#000');
 
 const buildStyles = (c = DEFAULT_LAYOUT) => StyleSheet.create({
   page: {
@@ -268,7 +270,7 @@ const buildStyles = (c = DEFAULT_LAYOUT) => StyleSheet.create({
   
   detailLabel: {
     fontSize: c.detailFontSize,
-    color: pick(c.labelColor),
+    color: pick(c.labelColor, c),
     fontWeight: 'normal',
     width: `${c.labelWidth}%`,
     textAlign: 'left',
@@ -276,14 +278,14 @@ const buildStyles = (c = DEFAULT_LAYOUT) => StyleSheet.create({
   
   detailColon: {
     fontSize: c.detailFontSize,
-    color: pick(c.valueColor),
+    color: pick(c.valueColor, c),
     fontWeight: '500',
     marginHorizontal: 2,
   },
   
   detailValue: {
     fontSize: c.detailFontSize,
-    color: pick(c.valueColor),
+    color: pick(c.valueColor, c),
     fontWeight: '500',
     flex: 1,
     textTransform: c.valuesUppercase ? 'uppercase' : 'none',
@@ -531,7 +533,7 @@ const applyStyles = (trust, c) => {
 // A picture the PDF renderer can actually load (full web address or embedded data)
 const loadable = (src) => typeof src === 'string' && /^(https?:|data:)/.test(src);
 
-const CertificatePage = ({ data, memberProgram, trust: trustProp }) => {
+const ClassicPage = ({ data, memberProgram, trust: trustProp }) => {
   // Trust details: passed in by server routes, otherwise the panel's live store.
   const trust = trustProp || getTrust();
   // Layout: Settings → Certificate Builder. Missing → the built-in certificate.
@@ -737,6 +739,240 @@ const CertificatePage = ({ data, memberProgram, trust: trustProp }) => {
       </View>
     </Page>
   );
+};
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Mangaldeep design: one picture holds the pink header; the body is printed
+// on the cream part below it — badges, details on lines, photo box, footer.
+// ═════════════════════════════════════════════════════════════════════════════
+const PAGE_H = 419.53;   // 148 mm in points
+const INK = '#1f1f1f';
+
+const buildBannerStyles = (c) => {
+  const PINK = c.designColor;
+  const ORANGE = c.designAccent;
+  const fs = c.detailFontSize;
+  return StyleSheet.create({
+    page: { backgroundColor: '#FFFDF7', fontFamily: 'NotoSansDevanagari', position: 'relative' },
+    bg: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: c.frameFit === 'contain' ? 'contain' : 'fill' },
+    body: {
+      position: 'absolute',
+      top: (PAGE_H * c.bodyTop) / 100,
+      left: 38, right: 34, bottom: 8,
+      flexDirection: 'column',
+    },
+    watermark: {
+      position: 'absolute', top: '30%', left: '36%', width: 150, height: 150,
+      objectFit: 'contain', opacity: c.watermarkOpacity / 100,
+    },
+
+    // Badges row
+    badgeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+    badgeSlot: { width: '42%', alignItems: 'center' },
+    badgeOuter: {
+      backgroundColor: ORANGE, borderRadius: 6, paddingHorizontal: 4, paddingVertical: 1.5,
+      alignSelf: 'stretch', marginHorizontal: 6,
+    },
+    badgeInner: {
+      backgroundColor: PINK, borderRadius: 5, paddingVertical: 3, paddingHorizontal: 10,
+      alignItems: 'center', justifyContent: 'center',
+    },
+    badgeText: { color: '#fff', fontSize: 11.5, fontWeight: 'bold', textAlign: 'center' },
+
+    // Details + photo
+    main: { flexDirection: 'row' },
+    details: { flex: 1, flexDirection: 'row', paddingRight: 14 },
+    col: { flex: 1 },
+    colGap: { width: 16 },
+    row: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: fs * 0.75 },
+    label: { fontSize: fs, fontWeight: 'bold', color: c.labelColor === 'black' ? INK : pick(c.labelColor, c), marginRight: 4 },
+    line: { flex: 1, borderBottomWidth: 0.9, borderBottomColor: INK, paddingLeft: 3, paddingBottom: 0.5 },
+    value: {
+      fontSize: fs, fontWeight: 'bold', color: c.valueColor === 'black' ? INK : pick(c.valueColor, c),
+      textTransform: c.valuesUppercase ? 'uppercase' : 'none',
+    },
+
+    side: { width: 96, alignItems: 'center' },
+    dateRow: { flexDirection: 'row', alignItems: 'flex-end', alignSelf: 'stretch', marginBottom: 8 },
+    dateLabel: { fontSize: fs, fontWeight: 'bold', color: INK, marginRight: 2 },
+    photoBox: {
+      width: 86, height: 100, borderWidth: 2, borderColor: PINK, backgroundColor: '#fff',
+      alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+    },
+    photo: { width: '100%', height: '100%', objectFit: 'cover' },
+    photoHint: { fontSize: 9, fontWeight: 'bold', color: '#8a8a8a', textAlign: 'center', lineHeight: 1.4 },
+    memberNo: { fontSize: 8, fontWeight: 'bold', color: INK, marginTop: 3, textAlign: 'center' },
+    memberNoValue: { color: PINK },
+
+    // Lines under the details
+    amountRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginTop: 1 },
+    amount: { fontSize: fs, fontWeight: 'bold', color: INK, marginRight: 12 },
+    joinFee: { fontSize: fs - 1, fontWeight: 'bold', color: PINK },
+    rules: { fontSize: 7.5, color: INK, marginTop: 2, lineHeight: 1.25 },
+    rulesLabel: { fontWeight: 'bold', color: PINK },
+    note: { fontSize: 7.5, color: INK, marginTop: 1, lineHeight: 1.25 },
+
+    // Footer
+    footer: { marginTop: 'auto', flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+    footSide: { width: 130, alignItems: 'center' },
+    footHead: { fontSize: 12.5, fontWeight: 'bold', color: PINK, textAlign: 'center' },
+    footName: { fontSize: 8.5, fontWeight: 'bold', color: INK, textAlign: 'center' },
+    sign: { height: 22, width: 90, objectFit: 'contain', marginBottom: 1 },
+    footCenter: { flex: 1, alignItems: 'center', paddingHorizontal: 6 },
+    thanksBox: { borderTopWidth: 0.9, borderBottomWidth: 0.9, borderColor: PINK, paddingVertical: 1.5, paddingHorizontal: 26, marginBottom: 3 },
+    thanks: { fontSize: 9.5, color: PINK, textAlign: 'center' },
+    footNote: { fontSize: 8, fontWeight: 'bold', color: INK, textAlign: 'center' },
+  });
+};
+
+let bannerStyles = null;
+let bannerKey = '';
+const getBannerStyles = (trust, c) => {
+  const key = [
+    trust.pdfColorPrimary, trust.pdfColorAccent, c.designColor, c.designAccent, c.bodyTop, c.detailFontSize,
+    c.labelColor, c.valueColor, c.valuesUppercase, c.watermarkOpacity, c.frameFit,
+  ].join('|');
+  if (key !== bannerKey || !bannerStyles) {
+    bannerKey = key;
+    BLUE = trust.pdfColorPrimary || BLUE;
+    RED = trust.pdfColorAccent || RED;
+    styleKey = '';               // classic styles rebuild on next use
+    bannerStyles = buildBannerStyles(c);
+  }
+  return bannerStyles;
+};
+
+const BannerPage = ({ data, memberProgram, trust, c }) => {
+  const st = getBannerStyles(trust, c);
+  const values = buildCertificateValues(data, memberProgram, trust);
+  const fill = (text) => fillCertificateText(text, values).trim();
+  const bg = c.bannerSrc && loadable(c.bannerSrc) ? c.bannerSrc : BannerImg;
+  const logoImg = trust.hasCustomLogo && trust.logoSrc ? trust.logoSrc : LogoImg;
+
+  const rows = c.fields.filter((f) => f.show);
+  const leftRows = rows.filter((f) => f.col !== 'right');
+  const rightRows = rows.filter((f) => f.col === 'right');
+
+  const schemeLine = c.showScheme ? fill(c.schemeText) : '';
+  const contribution = c.showContribution ? fill(c.contributionText) : '';
+  const joinFeeLine = c.showJoinFee && !!data?.joinFees && values.joinFeePending !== '' && Number(values.joinFeePending) > 0
+    ? fill(c.joinFeeText) : '';
+  const rule = c.showRules ? String(memberProgram?.certificateRule || '').trim() : '';
+  const note = fill(c.note);
+  const center1 = c.showCenter ? fill(c.centerLine1) : '';
+  const center2 = c.showCenter ? fill(c.centerLine2) : '';
+  const memberNo = [data?.registrationNumber, data?.legacyApplicationNo && `(${data.legacyApplicationNo})`].filter(Boolean).join(' ');
+
+  const detailRow = (f) => (
+    <View key={f.id} style={st.row} wrap={false}>
+      <Text style={st.label}>{f.label}</Text>
+      <View style={st.line}>
+        <Text hyphenationCallback={wholeWords} style={st.value}>{certificateFieldValue(f, values)}</Text>
+      </View>
+    </View>
+  );
+
+  const badge = (text) => (
+    <View style={st.badgeSlot}>
+      {text ? (
+        <View style={st.badgeOuter}>
+          <View style={st.badgeInner}>
+            <Text hyphenationCallback={wholeWords} style={[st.badgeText, { fontSize: fitFontSize(text, 11.5, 34, 0.6) }]}>{text}</Text>
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
+
+  return (
+    <Page size={{ width: '210mm', height: '148mm' }} style={st.page}>
+      {c.showFrame && <Image src={bg} style={st.bg} />}
+
+      <View style={st.body}>
+        {c.showWatermark && <Image src={logoImg} style={st.watermark} />}
+
+        <View style={st.badgeRow}>
+          {badge(c.title.trim())}
+          {badge(schemeLine)}
+        </View>
+
+        <View style={st.main}>
+          <View style={st.details}>
+            <View style={st.col}>{leftRows.map(detailRow)}</View>
+            {rightRows.length > 0 && <View style={st.colGap} />}
+            {rightRows.length > 0 && <View style={st.col}>{rightRows.map(detailRow)}</View>}
+          </View>
+
+          {(c.showPhoto || c.showDate || c.showMemberNo) && (
+            <View style={st.side}>
+              {c.showDate && (
+                <View style={st.dateRow}>
+                  <Text style={st.dateLabel}>{c.dateLabel}</Text>
+                  <View style={st.line}><Text style={st.value}>{values.dateJoin}</Text></View>
+                </View>
+              )}
+              {c.showPhoto && (
+                <View style={st.photoBox}>
+                  {data?.photoURL
+                    ? <Image src={data.photoURL} style={st.photo} />
+                    : <Text style={st.photoHint}>{'फोटो यहाँ\nचिपकाए'}</Text>}
+                </View>
+              )}
+              {c.showMemberNo && memberNo ? (
+                <Text style={st.memberNo}>{c.memberNoLabel} <Text style={st.memberNoValue}>{memberNo}</Text></Text>
+              ) : null}
+            </View>
+          )}
+        </View>
+
+        {(contribution || joinFeeLine) ? (
+          <View style={st.amountRow}>
+            {contribution ? <Text style={st.amount}>{contribution}</Text> : null}
+            {joinFeeLine ? <Text style={st.joinFee}>{joinFeeLine}</Text> : null}
+          </View>
+        ) : null}
+        {rule ? (
+          <Text style={st.rules}><Text style={st.rulesLabel}>{c.rulesLabel} </Text>{rule}</Text>
+        ) : null}
+        {note ? <Text style={st.note}>{note}</Text> : null}
+
+        <View style={st.footer}>
+          <View style={st.footSide}>
+            {c.showLeft && (
+              <>
+                {loadable(c.leftSignSrc) && <Image src={c.leftSignSrc} style={st.sign} />}
+                <Text style={st.footHead}>{c.leftLabel}</Text>
+                {fill(c.leftText) ? <Text style={st.footName}>{fill(c.leftText)}</Text> : null}
+              </>
+            )}
+          </View>
+
+          <View style={st.footCenter}>
+            {center1 ? <View style={st.thanksBox}><Text style={st.thanks}>{center1}</Text></View> : null}
+            {center2 ? <Text style={st.footNote}>{center2}</Text> : null}
+          </View>
+
+          <View style={st.footSide}>
+            {c.showRight && (
+              <>
+                {loadable(c.rightSignSrc) && <Image src={c.rightSignSrc} style={st.sign} />}
+                <Text style={st.footHead}>{c.rightLabel}</Text>
+                {fill(c.rightLine1) ? <Text style={st.footName}>{fill(c.rightLine1)}</Text> : null}
+                {fill(c.rightLine2) ? <Text style={st.footName}>{fill(c.rightLine2)}</Text> : null}
+              </>
+            )}
+          </View>
+        </View>
+      </View>
+    </Page>
+  );
+};
+
+const CertificatePage = ({ data, memberProgram, trust: trustProp }) => {
+  const trust = trustProp || getTrust();
+  const c = trust.certificate || DEFAULT_LAYOUT;
+  if (c.design === 'banner') return <BannerPage data={data} memberProgram={memberProgram} trust={trust} c={c} />;
+  return <ClassicPage data={data} memberProgram={memberProgram} trust={trust} />;
 };
 
 const CertificateCom = ({ data, memberProgram, trust }) => {
